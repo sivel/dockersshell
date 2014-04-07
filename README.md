@@ -1,4 +1,4 @@
 dockersshell
 ============
 
-Login shell that spawns docker instance and initiates SSH connection with it
+Login shell that spawns a docker instance and initiates an SSH connection with it
