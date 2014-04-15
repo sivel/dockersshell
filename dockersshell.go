@@ -140,7 +140,7 @@ func main() {
 
 	connect(config.User, hostPort[0], port)
 
-	if client.StopContainer(container.ID, 1) != nil {
+	if client.StopContainer(container.ID, 0) != nil {
 		fmt.Printf("Unable to stop container: %s\n", err)
 		os.Exit(2)
 	}
