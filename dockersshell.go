@@ -65,6 +65,7 @@ func main() {
 	var Endpoint string
 	Smallest := 1024
 	user := os.Getenv("USER")
+	os.Setenv("DSSHUSER", user)
 	stamp := strconv.FormatInt(time.Now().Unix(), 10)
 	name := fmt.Sprintf("%s-%s", user, stamp)
 
