@@ -16,6 +16,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -64,10 +65,14 @@ func connect(user string, host string, port string) {
 }
 
 func wait(host string, port string) {
+	buf := make([]byte, 20)
 	for i := 0; i < 60; i++ {
-		_, err := net.Dial("tcp", fmt.Sprintf("%s:%s", host, port))
+		conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", host, port))
 		if err == nil {
-			return
+			_, err := bufio.NewReader(conn).Read(buf)
+			if err == nil && strings.Contains(string(buf), "SSH") {
+				return
+			}
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
