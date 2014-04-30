@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/exec"
@@ -60,6 +61,17 @@ func connect(user string, host string, port string) {
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Unable to initiate ssh connection: %s\n", err))
 	}
+}
+
+func wait(host string, port string) {
+	for i := 0; i < 60; i++ {
+		_, err := net.Dial("tcp", fmt.Sprintf("%s:%s", host, port))
+		if err == nil {
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	log.Fatal(fmt.Sprintf("%s:%s never became available", host, port))
 }
 
 func main() {
@@ -134,6 +146,8 @@ func main() {
 		fmt.Printf("Unable to get port information for container: %s\n", err)
 	}
 	port := inspect.NetworkSettings.Ports["22/tcp"][0].HostPort
+
+	wait(hostPort[0], port)
 
 	connect(config.User, hostPort[0], port)
 
