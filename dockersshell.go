@@ -18,6 +18,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -57,8 +58,7 @@ func connect(user string, host string, port string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("Unable to initiate ssh connection: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to initiate ssh connection: %s\n", err))
 	}
 }
 
@@ -100,38 +100,33 @@ func main() {
 	}
 
 	if Endpoint == "" {
-		fmt.Println("No acceptable endpoints found")
-		os.Exit(2)
+		log.Fatal("No acceptable endpoints found")
 	}
 
 	Url, err := url.Parse(Endpoint)
 	if err != nil {
-		fmt.Printf("Unable to parse endpoint URL: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to parse endpoint URL: %s\n", err))
 	} else if Url.Host == "" {
-		fmt.Println("No host found in endpoint")
+		log.Fatal("No host found in endpoint")
 	}
 
 	hostPort := strings.SplitN(Url.Host, ":", 2)
 
 	client, err := docker.NewClient(Endpoint)
 	if err != nil {
-		fmt.Printf("Unable to communicate: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to communicate: %s\n", err))
 	}
 
 	dockerConfig := docker.Config{Image: config.Image}
 	opts := docker.CreateContainerOptions{Name: name, Config: &dockerConfig}
 	container, err := client.CreateContainer(opts)
 	if err != nil {
-		fmt.Printf("Unable to create container: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to create container: %s\n", err))
 	}
 
 	host := docker.HostConfig{PublishAllPorts: true}
 	if client.StartContainer(container.ID, &host) != nil {
-		fmt.Printf("Unable to start container: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to start container: %s\n", err))
 	}
 
 	inspect, err := client.InspectContainer(container.ID)
@@ -143,14 +138,12 @@ func main() {
 	connect(config.User, hostPort[0], port)
 
 	if client.StopContainer(container.ID, 0) != nil {
-		fmt.Printf("Unable to stop container: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to stop container: %s\n", err))
 	}
 
 	remove := docker.RemoveContainerOptions{ID: container.ID, RemoveVolumes: false}
 	if client.RemoveContainer(remove) != nil {
-		fmt.Printf("Unable to remove container: %s\n", err)
-		os.Exit(2)
+		log.Fatal(fmt.Sprintf("Unable to remove container: %s\n", err))
 	}
 
 	os.Exit(0)
