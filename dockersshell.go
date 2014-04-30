@@ -17,15 +17,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
 	"io/ioutil"
-	"launchpad.net/goyaml"
 	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fsouza/go-dockerclient"
+	"launchpad.net/goyaml"
 )
 
 type Config struct {
