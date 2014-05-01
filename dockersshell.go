@@ -90,7 +90,7 @@ func main() {
 	stamp := strconv.FormatInt(time.Now().Unix(), 10)
 	name := fmt.Sprintf("%s-%s", user, stamp)
 
-	flag.BoolVar(&CleanUp, "clean", true, "Clean up old containers")
+	flag.BoolVar(&CleanUp, "clean", false, "Clean up old containers")
 	flag.Parse()
 
 	config := getconfig()
