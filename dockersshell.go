@@ -17,6 +17,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -36,12 +37,13 @@ type Config struct {
 	Endpoints []string `yaml:"endpoints,omitempty"`
 	Image     string   `yaml:"image,omitempty"`
 	User      string   `yaml:"user,omitempty"`
+	MaxAge    int      `yaml:"max_age,omitempty"`
 }
 
 func getconfig() *Config {
 	var config Config
 
-	defaults := []byte("endpoints: ['http://127.0.0.1:4243']\nimage: ssh\nuser: ubuntu")
+	defaults := []byte("endpoints: ['http://127.0.0.1:4243']\nimage: ssh\nuser: ubuntu\nmax_age: 86400")
 
 	text, err := ioutil.ReadFile("/etc/dockersshell.yaml")
 	if err != nil {
@@ -81,11 +83,15 @@ func wait(host string, port string) {
 
 func main() {
 	var Endpoint string
+	var CleanUp bool
 	Smallest := 1024
 	user := os.Getenv("USER")
 	os.Setenv("DSSHUSER", user)
 	stamp := strconv.FormatInt(time.Now().Unix(), 10)
 	name := fmt.Sprintf("%s-%s", user, stamp)
+
+	flag.BoolVar(&CleanUp, "clean", true, "Clean up old containers")
+	flag.Parse()
 
 	config := getconfig()
 
@@ -107,13 +113,40 @@ func main() {
 			continue
 		}
 
-		if len(containers) == 0 {
-			Endpoint = endpoint
-			break
-		} else if len(containers) < Smallest {
-			Endpoint = endpoint
-			Smallest = len(containers)
+		if CleanUp {
+			for _, container := range containers {
+				if len(container.Names) != 1 {
+					continue
+				}
+				parts := strings.Split(container.Names[0], "-")
+				if len(parts) != 2 {
+					continue
+				}
+				created, err := strconv.ParseInt(parts[1], 10, 64)
+				if err == nil && config.MaxAge != 0 && time.Now().Unix()-created > int64(config.MaxAge) {
+					if client.StopContainer(container.ID, 0) != nil {
+						log.Fatal(fmt.Sprintf("Unable to stop container: %s\n", err))
+					}
+
+					remove := docker.RemoveContainerOptions{ID: container.ID, RemoveVolumes: false}
+					if client.RemoveContainer(remove) != nil {
+						log.Fatal(fmt.Sprintf("Unable to remove container: %s\n", err))
+					}
+				}
+			}
+		} else {
+			if len(containers) == 0 {
+				Endpoint = endpoint
+				break
+			} else if len(containers) < Smallest {
+				Endpoint = endpoint
+				Smallest = len(containers)
+			}
 		}
+	}
+
+	if CleanUp {
+		os.Exit(0)
 	}
 
 	if Endpoint == "" {
